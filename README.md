@@ -6,7 +6,6 @@
 > Speaker: **Abhiraj Malappa**, bitsIO  
 > Event: [usergroups.splunk.com](https://usergroups.splunk.com/events/details/splunk-fort-worth-splunk-user-group-presents-operationalizing-externally-trained-ml-models-in-splunk-mltk/)
 
----
 
 ## About
 
@@ -16,44 +15,33 @@ The use case is **BGP failure prediction**: predicting router BGP session failur
 
 The pattern generalises to any model, any framework, any Splunk environment.
 
----
 
 ## The architecture
 
 ```
 Data Lake (6-month BGP history)
-    │
-    ▼
-Databricks — train Keras neural network
-    │  focal loss · class weights · 14 features
-    ▼
-MLflow — track experiment · register .onnx artifact
-    │
-    ▼  tf2onnx (opset 12)
-    │
-    ▼
-bgp_failure_model.onnx ──► Splunk MLTK
-    │  real-time inference ( | apply in SPL)
-    ▼
-failure_probability per router
-    │
-    ▼
-Drift alert fires ──> Webhook ──> Databricks retrain job
-    │
-    ▼
+      ↓
+Train outside Splunk (Databricks + Keras)
+      ↓
+Track with MLflow (versioning, artifact registry)
+      ↓
+Export to ONNX (.onnx file)
+      ↓
+Import into Splunk AITK
+      ↓
+real-time inference ( | apply in SPL)
+      ↓
+Monitor drifts ──> Webhook ──> Databricks retrain job
+      ↓
  loop closed
 ```
 
 **Why ONNX?** The `.onnx` file is the only thing that crosses the boundary between the training world and the inference world. It does not care how the model was trained or where it runs. That is the entire point.
 
----
-
 ## Three reasons we train outside Splunk - 
 * Data ceiling - AITK trains on data already in Splunk. Production ML models often need months of historical data to train on. Splunk's retention policies do not always support this. Your training data may live in a data lake outside Splunk's reach. 
 * Algorithm ceiling - AITK supports classical ML. The moment you need fine-grained control - custom loss functions, or non-standard architectures, you are outside of what AITK can run natively. It cannot run Keras, PyTorch, or TensorFlow models.
 * Governance ceiling - AITK has no experiment tracking, no model versioning, and no automated retraining triggers. A model deployed to AITK today cannot be reproducibly traced, compared, or retrained without significant manual effort.
-
----
 
 ## Repository structure
 
@@ -84,7 +72,6 @@ Drift alert fires ──> Webhook ──> Databricks retrain job
 12. Monitoring SPL (prediction drift, feature drift, ServiceNow ground truth, data quality, training-serving skew)
 13. Retraining trigger logic — `should_retrain()` function 
 
----
 
 ## Splunk MLTK Automated deployment — REST API push
 
@@ -94,13 +81,11 @@ Drift alert fires ──> Webhook ──> Databricks retrain job
 | L2 — REST API push | `requests.post()` to Splunk REST endpoint | Automated retraining loop |
 | L3 — CI/CD | MLflow webhook → GitHub Actions → validate → push | Production gold standard |
 
----
 
 ## Splunk → Databricks retraining trigger (closing the loop)
 
 Splunk fires a drift alert -> alert action POSTs to Databricks Jobs API-> retraining runs automatically.
 
----
 
 ## Five monitoring types — all running in Splunk SPL
 
@@ -111,7 +96,6 @@ Splunk fires a drift alert -> alert action POSTs to Databricks Jobs API-> retrai
 4. **Data quality** - Did the model receive valid inputs before scoring? 
 5. **Training-serving skew** - Are training and inference computing features the same way? 
 
----
 
 ## Generalising the pattern
 
@@ -126,18 +110,6 @@ This architecture is not BGP-specific. The same pipeline works for:
 
 
 The recipe is always the same: **train where your data is → govern with MLflow → export to ONNX → infer in Splunk**.
-
----
-
-## Citation / attribution
-
-If you use this work, please cite the presentation:
-
-```
-Abhiraj Malappa (2026). Operationalizing Externally Trained ML Models in Splunk MLTK.
-Fort Worth Splunk User Group, March 26, 2026.
-https://usergroups.splunk.com/events/details/splunk-fort-worth-splunk-user-group-presents-operationalizing-externally-trained-ml-models-in-splunk-mltk/
-```
 
 ---
 
