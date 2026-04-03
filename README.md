@@ -6,6 +6,7 @@
 > Speaker: **Abhiraj Malappa**, bitsIO  
 > Event: [usergroups.splunk.com](https://usergroups.splunk.com/events/details/splunk-fort-worth-splunk-user-group-presents-operationalizing-externally-trained-ml-models-in-splunk-mltk/)
 
+Article: [Medium](https://medium.com/@abhiraj7m/extending-splunk-ai-toolkit-deploying-an-externally-trained-deep-learning-model-in-splunk-using-0280c4d5664f)
 
 ## About
 
